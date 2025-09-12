@@ -1,0 +1,26 @@
+### Health Check
+GET http://localhost:3000/health
+
+### Install App (POST)
+POST http://localhost:3000/install
+Content-Type: application/json
+
+{
+  "code": "your_auth_code_here",
+  "domain": "your-domain.bitrix24.com"
+}
+
+### Install App (GET) - Backup method
+GET http://localhost:3000/install?code=your_auth_code_here&domain=your-domain.bitrix24.com
+
+### Test Contacts API
+GET http://localhost:3000/test/contacts?domain=your-domain.bitrix24.com
+
+### Test User API
+GET http://localhost:3000/test/user?domain=your-domain.bitrix24.com
+
+### Test Deals API
+GET http://localhost:3000/test/deals?domain=your-domain.bitrix24.com
+
+### Test Leads API
+GET http://localhost:3000/test/leads?domain=your-domain.bitrix24.com
