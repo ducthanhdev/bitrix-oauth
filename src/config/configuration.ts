@@ -9,4 +9,5 @@ export default () => ({
   mongodb: {
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/bitrix-oauth',
   },
+  apiKey: process.env.API_KEY || 'bitrix-oauth-default-key',
 });
