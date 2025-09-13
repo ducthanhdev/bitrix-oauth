@@ -35,15 +35,10 @@ export class BitrixApiService {
     payload: any = {},
   ): Promise<any> {
     try {
-      // Lấy access token hợp lệ
       const accessToken = await this.oauthService.ensureValidToken(domain);
-      
-      // Tạo URL API
       const apiUrl = `https://${domain}/rest/1/${accessToken}/${method}`;
       
       this.logger.log(`Calling Bitrix24 API: ${method} for domain: ${domain}`);
-
-      // Gọi API
       const response = await firstValueFrom(
         this.httpService.post(apiUrl, payload, {
           headers: {
@@ -53,7 +48,6 @@ export class BitrixApiService {
         })
       );
 
-      // Kiểm tra response từ Bitrix24
       if (response.data.error) {
         this.logger.error(`Bitrix24 API error:`, response.data.error);
         throw new BadRequestException(`Bitrix24 API error: ${response.data.error_description || response.data.error}`);
@@ -64,8 +58,6 @@ export class BitrixApiService {
 
     } catch (error) {
       this.logger.error(`API call failed for method ${method}:`, error.message);
-      
-      // Xử lý các loại lỗi khác nhau
       if (error.code === 'ECONNABORTED') {
         throw new BadRequestException('Request timeout - Bitrix24 server is not responding');
       }

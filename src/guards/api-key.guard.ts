@@ -9,7 +9,6 @@ export class ApiKeyGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const url = request.url;
     
-    // Bỏ qua OAuth endpoints và health check
     if (url.startsWith('/install') || url.startsWith('/health') || url.startsWith('/test/')) {
       return true;
     }

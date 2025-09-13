@@ -37,15 +37,11 @@ export class OAuthService {
     try {
       this.logger.log(`Handling install for domain: ${domain}`);
 
-      // Kiểm tra code có tồn tại
       if (!code) {
         throw new BadRequestException('Authorization code is required');
       }
 
-      // Trao đổi code lấy access token
       const tokenData = await this.exchangeCodeForToken(code, domain);
-      
-      // Lưu token vào database
       await this.saveToken(domain, tokenData);
 
       this.logger.log(`Successfully installed app for domain: ${domain}`);
@@ -107,10 +103,7 @@ export class OAuthService {
   private async saveToken(domain: string, tokenData: any): Promise<void> {
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-    // Xóa token cũ nếu có
     await this.tokenModel.deleteOne({ domain });
-
-    // Lưu token mới
     const token = new this.tokenModel({
       domain,
       accessToken: tokenData.access_token,
@@ -137,7 +130,6 @@ export class OAuthService {
       throw new BadRequestException('No active token found for this domain');
     }
 
-    // Kiểm tra token có hết hạn không
     if (new Date() >= token.expiresAt) {
       this.logger.log(`Token expired for domain: ${domain}, refreshing...`);
       await this.refreshToken(domain);
@@ -191,7 +183,6 @@ export class OAuthService {
       const tokenData = response.data;
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-      // Cập nhật token
       await this.tokenModel.updateOne(
         { domain },
         {
@@ -206,7 +197,6 @@ export class OAuthService {
     } catch (error) {
       this.logger.error(`Token refresh failed for domain ${domain}:`, error.response?.data || error.message);
       
-      // Đánh dấu token là không hợp lệ
       await this.tokenModel.updateOne({ domain }, { status: 'invalid' });
       throw new BadRequestException('Failed to refresh token');
     }

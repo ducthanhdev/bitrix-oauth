@@ -36,7 +36,6 @@ export class ContactService {
 
       const contacts = response.result || [];
       
-      // Lấy thông tin ngân hàng cho mỗi contact
       const contactsWithBankInfo = await Promise.all(
         contacts.map(async (contact: any) => {
           const bankInfo = await this.getContactBankInfo(domain, contact.ID);
@@ -92,7 +91,6 @@ export class ContactService {
     try {
       this.logger.log(`Creating new contact for domain: ${domain}`);
 
-      // Chuẩn bị dữ liệu cho Bitrix24
       const contactData = this.prepareContactDataForBitrix(createContactDto);
 
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.contact.add', {
@@ -101,12 +99,10 @@ export class ContactService {
 
       const contactId = response.result;
 
-      // Tạo thông tin ngân hàng nếu có
       if (createContactDto.bankInfo) {
         await this.createContactBankInfo(domain, contactId, createContactDto.bankInfo);
       }
 
-      // Lấy thông tin contact vừa tạo
       return await this.getContactById(domain, contactId);
     } catch (error) {
       this.logger.error('Failed to create contact:', error.message);
@@ -126,10 +122,8 @@ export class ContactService {
     try {
       this.logger.log(`Updating contact ${id} for domain: ${domain}`);
 
-      // Kiểm tra contact có tồn tại không
       await this.getContactById(domain, id);
 
-      // Chuẩn bị dữ liệu cập nhật
       const updateData = this.prepareContactDataForBitrix(updateContactDto);
 
       await this.bitrixApiService.callBitrixAPI(domain, 'crm.contact.update', {
@@ -137,12 +131,10 @@ export class ContactService {
         fields: updateData,
       });
 
-      // Cập nhật thông tin ngân hàng nếu có
       if (updateContactDto.bankInfo) {
         await this.updateContactBankInfo(domain, id, updateContactDto.bankInfo);
       }
 
-      // Lấy thông tin contact đã cập nhật
       return await this.getContactById(domain, id);
     } catch (error) {
       this.logger.error(`Failed to update contact ${id}:`, error.message);
@@ -164,13 +156,10 @@ export class ContactService {
     try {
       this.logger.log(`Deleting contact ${id} for domain: ${domain}`);
 
-      // Kiểm tra contact có tồn tại không
       await this.getContactById(domain, id);
 
-      // Xóa thông tin ngân hàng trước
       await this.deleteContactBankInfo(domain, id);
 
-      // Xóa contact
       await this.bitrixApiService.callBitrixAPI(domain, 'crm.contact.delete', {
         id: id,
       });
@@ -246,7 +235,6 @@ export class ContactService {
    */
   private async updateContactBankInfo(domain: string, contactId: string, bankInfo: BankInfoDto): Promise<void> {
     try {
-      // Lấy ID của requisite hiện tại
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.requisite.list', {
         filter: { ENTITY_ID: contactId, ENTITY_TYPE_ID: 4 },
         select: ['ID'],
@@ -254,7 +242,6 @@ export class ContactService {
 
       const requisites = response.result || [];
       if (requisites.length > 0) {
-        // Cập nhật requisite hiện tại
         await this.bitrixApiService.callBitrixAPI(domain, 'crm.requisite.update', {
           id: requisites[0].ID,
           fields: {
@@ -263,7 +250,6 @@ export class ContactService {
           },
         });
       } else {
-        // Tạo mới nếu chưa có
         await this.createContactBankInfo(domain, contactId, bankInfo);
       }
     } catch (error) {
