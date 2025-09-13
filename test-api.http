@@ -14,13 +14,20 @@ Content-Type: application/json
 GET http://localhost:3000/install?code=your_auth_code_here&domain=your-domain.bitrix24.com
 
 ### Test Contacts API
-GET http://localhost:3000/test/contacts?domain=your-domain.bitrix24.com
+GET http://localhost:3000/test/contacts?domain=ducthanh.bitrix24.vn
 
 ### Test User API
-GET http://localhost:3000/test/user?domain=your-domain.bitrix24.com
+GET http://localhost:3000/test/user?domain=ducthanh.bitrix24.vn
 
 ### Test Deals API
-GET http://localhost:3000/test/deals?domain=your-domain.bitrix24.com
+GET http://localhost:3000/test/deals?domain=ducthanh.bitrix24.vn
 
 ### Test Leads API
-GET http://localhost:3000/test/leads?domain=your-domain.bitrix24.com
+GET http://localhost:3000/test/leads?domain=ducthanh.bitrix24.vn
+
+### Test Contacts API with API Key
+GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn
+x-api-key: bitrix-oauth-default-key
+
+### Test OAuth Install (GET)
+GET http://localhost:3000/install?domain=ducthanh.bitrix24.vn&code=test123

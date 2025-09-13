@@ -1,15 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { HttpModule } from '@nestjs/axios';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { BitrixController } from './controllers/bitrix.controller';
-import { ContactController } from './controllers/contact.controller';
-import { OAuthService } from './services/oauth.service';
-import { BitrixApiService } from './services/bitrix-api.service';
-import { ContactService } from './services/contact.service';
+import { OAuthModule } from './modules/oauth/oauth.module';
+import { BitrixModule } from './modules/bitrix/bitrix.module';
+import { ContactModule } from './modules/contact/contact.module';
 import { Token, TokenSchema } from './schemas/token.schema';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import configuration from './config/configuration';
@@ -28,17 +25,13 @@ import configuration from './config/configuration';
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([{ name: Token.name, schema: TokenSchema }]),
-    HttpModule.register({
-      timeout: 30000,
-      maxRedirects: 5,
-    }),
+    OAuthModule,
+    BitrixModule,
+    ContactModule,
   ],
-  controllers: [AppController, BitrixController, ContactController],
+  controllers: [AppController],
   providers: [
-    AppService, 
-    OAuthService, 
-    BitrixApiService, 
-    ContactService,
+    AppService,
     {
       provide: APP_GUARD,
       useClass: ApiKeyGuard,

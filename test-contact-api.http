@@ -2,23 +2,23 @@
 ### API Key mặc định: bitrix-oauth-default-key
 
 ### 1. Lấy danh sách tất cả contacts
-GET http://localhost:3000/contacts?domain=test.bitrix24.com
+GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn
 x-api-key: bitrix-oauth-default-key
 
 ### 2. Tìm kiếm contacts theo tên
-GET http://localhost:3000/contacts?domain=test.bitrix24.com&name=Nguyễn
+GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn&name=Nguyễn
 x-api-key: bitrix-oauth-default-key
 
 ### 3. Tìm kiếm contacts theo email
-GET http://localhost:3000/contacts?domain=test.bitrix24.com&email=test@example.com
+GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn&email=test@example.com
 x-api-key: bitrix-oauth-default-key
 
 ### 4. Lấy thông tin contact theo ID
-GET http://localhost:3000/contacts/123?domain=test.bitrix24.com
+GET http://localhost:3000/contacts/123?domain=ducthanh.bitrix24.vn
 x-api-key: bitrix-oauth-default-key
 
 ### 5. Tạo contact mới
-POST http://localhost:3000/contacts?domain=test.bitrix24.com
+POST http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn
 x-api-key: bitrix-oauth-default-key
 Content-Type: application/json
 
@@ -39,7 +39,7 @@ Content-Type: application/json
 }
 
 ### 6. Cập nhật contact
-PUT http://localhost:3000/contacts/123?domain=test.bitrix24.com
+PUT http://localhost:3000/contacts/123?domain=ducthanh.bitrix24.vn
 x-api-key: bitrix-oauth-default-key
 Content-Type: application/json
 
@@ -54,12 +54,12 @@ Content-Type: application/json
 }
 
 ### 7. Xóa contact
-DELETE http://localhost:3000/contacts/123?domain=test.bitrix24.com
+DELETE http://localhost:3000/contacts/123?domain=ducthanh.bitrix24.vn
 x-api-key: bitrix-oauth-default-key
 
 ### 8. Test không có API Key (sẽ trả về 401)
-GET http://localhost:3000/contacts?domain=test.bitrix24.com
+GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn
 
 ### 9. Test API Key sai (sẽ trả về 401)
-GET http://localhost:3000/contacts?domain=test.bitrix24.com
+GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn
 x-api-key: wrong-api-key
