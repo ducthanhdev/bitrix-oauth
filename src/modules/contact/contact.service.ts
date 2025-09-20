@@ -2,32 +2,15 @@ import { Injectable, Logger, BadRequestException, NotFoundException } from '@nes
 import { BitrixApiService } from '../bitrix/bitrix-api.service';
 import { CreateContactDto, UpdateContactDto, ContactResponseDto, AddressDto, BankInfoDto } from '../../dto/contact.dto';
 
-/**
- * Contact Service - Xử lý logic quản lý Contact với Bitrix24
- * 
- * Chức năng chính:
- * - CRUD operations cho Contact (Create, Read, Update, Delete)
- * - Quản lý thông tin ngân hàng (Bank Info) với crm.requisite
- * - Validation và mapping dữ liệu
- * - Xử lý lỗi và logging chi tiết
- */
 @Injectable()
 export class ContactService {
   private readonly logger = new Logger(ContactService.name);
 
   constructor(private readonly bitrixApiService: BitrixApiService) {}
 
-  /**
-   * Lấy danh sách tất cả contacts
-   * 
-   * @param domain - Domain Bitrix24
-   * @param filters - Bộ lọc tìm kiếm
-   * @returns Danh sách contacts với thông tin ngân hàng
-   */
+  /** Get all contacts with bank info */
   async getAllContacts(domain: string, filters: any = {}): Promise<ContactResponseDto[]> {
     try {
-      this.logger.log(`Getting all contacts for domain: ${domain}`);
-
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.contact.list', {
         select: ['ID', 'NAME', 'LAST_NAME', 'PHONE', 'EMAIL', 'WEB', 'ADDRESS', 'DATE_CREATE', 'DATE_MODIFY'],
         filter: filters,
@@ -50,17 +33,9 @@ export class ContactService {
     }
   }
 
-  /**
-   * Lấy thông tin một contact theo ID
-   * 
-   * @param domain - Domain Bitrix24
-   * @param id - ID của contact
-   * @returns Thông tin contact chi tiết
-   */
+  /** Get contact by ID */
   async getContactById(domain: string, id: string): Promise<ContactResponseDto> {
     try {
-      this.logger.log(`Getting contact by ID: ${id} for domain: ${domain}`);
-
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.contact.get', {
         id: id,
       });
@@ -80,17 +55,9 @@ export class ContactService {
     }
   }
 
-  /**
-   * Tạo contact mới
-   * 
-   * @param domain - Domain Bitrix24
-   * @param createContactDto - Dữ liệu contact mới
-   * @returns Thông tin contact đã tạo
-   */
+  /** Create new contact */
   async createContact(domain: string, createContactDto: CreateContactDto): Promise<ContactResponseDto> {
     try {
-      this.logger.log(`Creating new contact for domain: ${domain}`);
-
       const contactData = this.prepareContactDataForBitrix(createContactDto);
 
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.contact.add', {
@@ -110,18 +77,9 @@ export class ContactService {
     }
   }
 
-  /**
-   * Cập nhật contact
-   * 
-   * @param domain - Domain Bitrix24
-   * @param id - ID của contact
-   * @param updateContactDto - Dữ liệu cập nhật
-   * @returns Thông tin contact đã cập nhật
-   */
+  /** Update contact */
   async updateContact(domain: string, id: string, updateContactDto: UpdateContactDto): Promise<ContactResponseDto> {
     try {
-      this.logger.log(`Updating contact ${id} for domain: ${domain}`);
-
       await this.getContactById(domain, id);
 
       const updateData = this.prepareContactDataForBitrix(updateContactDto);
@@ -145,17 +103,9 @@ export class ContactService {
     }
   }
 
-  /**
-   * Xóa contact
-   * 
-   * @param domain - Domain Bitrix24
-   * @param id - ID của contact
-   * @returns Thông báo xóa thành công
-   */
+  /** Delete contact */
   async deleteContact(domain: string, id: string): Promise<{ message: string }> {
     try {
-      this.logger.log(`Deleting contact ${id} for domain: ${domain}`);
-
       await this.getContactById(domain, id);
 
       await this.deleteContactBankInfo(domain, id);
@@ -174,17 +124,11 @@ export class ContactService {
     }
   }
 
-  /**
-   * Lấy thông tin ngân hàng của contact
-   * 
-   * @param domain - Domain Bitrix24
-   * @param contactId - ID của contact
-   * @returns Thông tin ngân hàng hoặc null
-   */
+  /** Get contact bank info */
   private async getContactBankInfo(domain: string, contactId: string): Promise<BankInfoDto | null> {
     try {
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.requisite.list', {
-        filter: { ENTITY_ID: contactId, ENTITY_TYPE_ID: 4 }, // 4 = Contact
+        filter: { ENTITY_ID: contactId, ENTITY_TYPE_ID: 4 },
         select: ['ID', 'RQ_BANK_NAME', 'RQ_ACC_NUM'],
       });
 
@@ -204,19 +148,13 @@ export class ContactService {
     }
   }
 
-  /**
-   * Tạo thông tin ngân hàng cho contact
-   * 
-   * @param domain - Domain Bitrix24
-   * @param contactId - ID của contact
-   * @param bankInfo - Thông tin ngân hàng
-   */
+  /** Create contact bank info */
   private async createContactBankInfo(domain: string, contactId: string, bankInfo: BankInfoDto): Promise<void> {
     try {
       await this.bitrixApiService.callBitrixAPI(domain, 'crm.requisite.add', {
         fields: {
           ENTITY_ID: contactId,
-          ENTITY_TYPE_ID: 4, // 4 = Contact
+          ENTITY_TYPE_ID: 4,
           RQ_BANK_NAME: bankInfo.bankName,
           RQ_ACC_NUM: bankInfo.accountNumber,
         },
@@ -226,13 +164,7 @@ export class ContactService {
     }
   }
 
-  /**
-   * Cập nhật thông tin ngân hàng cho contact
-   * 
-   * @param domain - Domain Bitrix24
-   * @param contactId - ID của contact
-   * @param bankInfo - Thông tin ngân hàng mới
-   */
+  /** Update contact bank info */
   private async updateContactBankInfo(domain: string, contactId: string, bankInfo: BankInfoDto): Promise<void> {
     try {
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.requisite.list', {
@@ -257,12 +189,7 @@ export class ContactService {
     }
   }
 
-  /**
-   * Xóa thông tin ngân hàng của contact
-   * 
-   * @param domain - Domain Bitrix24
-   * @param contactId - ID của contact
-   */
+  /** Delete contact bank info */
   private async deleteContactBankInfo(domain: string, contactId: string): Promise<void> {
     try {
       const response = await this.bitrixApiService.callBitrixAPI(domain, 'crm.requisite.list', {
@@ -281,12 +208,7 @@ export class ContactService {
     }
   }
 
-  /**
-   * Chuẩn bị dữ liệu contact cho Bitrix24
-   * 
-   * @param contactDto - DTO contact
-   * @returns Dữ liệu đã format cho Bitrix24
-   */
+  /** Prepare contact data for Bitrix24 */
   private prepareContactDataForBitrix(contactDto: CreateContactDto | UpdateContactDto): any {
     const data: any = {};
 
@@ -313,13 +235,7 @@ export class ContactService {
     return data;
   }
 
-  /**
-   * Chuyển đổi dữ liệu từ Bitrix24 sang DTO
-   * 
-   * @param contact - Dữ liệu contact từ Bitrix24
-   * @param bankInfo - Thông tin ngân hàng
-   * @returns ContactResponseDto
-   */
+  /** Map Bitrix24 contact data to DTO */
   private mapBitrixContactToDto(contact: any, bankInfo: BankInfoDto | null): ContactResponseDto {
     const phone = contact.PHONE && contact.PHONE.length > 0 ? contact.PHONE[0].VALUE : undefined;
     const email = contact.EMAIL && contact.EMAIL.length > 0 ? contact.EMAIL[0].VALUE : undefined;

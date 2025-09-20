@@ -2,14 +2,6 @@ import { Controller, Get, Query, Logger, BadRequestException } from '@nestjs/com
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { BitrixApiService } from './bitrix-api.service';
 
-/**
- * Bitrix Controller - Test endpoints cho Bitrix24 API
- * 
- * Chức năng:
- * - Cung cấp các endpoint test để kiểm tra kết nối Bitrix24
- * - Test các API phổ biến: contacts, user, deals, leads
- * - Logging chi tiết cho debug
- */
 @ApiTags('Bitrix Test')
 @Controller('test')
 export class BitrixController {
@@ -17,12 +9,7 @@ export class BitrixController {
 
   constructor(private readonly bitrixApiService: BitrixApiService) {}
 
-  /**
-   * Test endpoint để gọi API Bitrix24 - Contacts
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Kết quả test API contacts
-   */
+  /** Test Bitrix24 contacts API */
   @Get('contacts')
   @ApiOperation({ summary: 'Test API lấy danh sách contacts từ Bitrix24' })
   @ApiQuery({ name: 'domain', description: 'Domain Bitrix24', example: 'your-domain.bitrix24.com' })
@@ -34,7 +21,6 @@ export class BitrixController {
     }
 
     try {
-      this.logger.log(`Testing contacts API for domain: ${domain}`);
       const contacts = await this.bitrixApiService.getContacts(domain);
       return {
         success: true,
@@ -47,12 +33,7 @@ export class BitrixController {
     }
   }
 
-  /**
-   * Test endpoint để lấy thông tin user hiện tại
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Kết quả test API user
-   */
+  /** Test Bitrix24 user API */
   @Get('user')
   @ApiOperation({ summary: 'Test API lấy thông tin user hiện tại từ Bitrix24' })
   @ApiQuery({ name: 'domain', description: 'Domain Bitrix24', example: 'your-domain.bitrix24.com' })
@@ -64,7 +45,6 @@ export class BitrixController {
     }
 
     try {
-      this.logger.log(`Testing user API for domain: ${domain}`);
       const user = await this.bitrixApiService.getCurrentUser(domain);
       return {
         success: true,
@@ -77,12 +57,7 @@ export class BitrixController {
     }
   }
 
-  /**
-   * Test endpoint để lấy danh sách deals
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Kết quả test API deals
-   */
+  /** Test Bitrix24 deals API */
   @Get('deals')
   @ApiOperation({ summary: 'Test API lấy danh sách deals từ Bitrix24' })
   @ApiQuery({ name: 'domain', description: 'Domain Bitrix24', example: 'your-domain.bitrix24.com' })
@@ -94,7 +69,6 @@ export class BitrixController {
     }
 
     try {
-      this.logger.log(`Testing deals API for domain: ${domain}`);
       const deals = await this.bitrixApiService.getDeals(domain);
       return {
         success: true,
@@ -107,12 +81,7 @@ export class BitrixController {
     }
   }
 
-  /**
-   * Test endpoint để lấy danh sách leads
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Kết quả test API leads
-   */
+  /** Test Bitrix24 leads API */
   @Get('leads')
   @ApiOperation({ summary: 'Test API lấy danh sách leads từ Bitrix24' })
   @ApiQuery({ name: 'domain', description: 'Domain Bitrix24', example: 'your-domain.bitrix24.com' })
@@ -124,7 +93,6 @@ export class BitrixController {
     }
 
     try {
-      this.logger.log(`Testing leads API for domain: ${domain}`);
       const leads = await this.bitrixApiService.getLeads(domain);
       return {
         success: true,

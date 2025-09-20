@@ -6,16 +6,6 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Token, TokenDocument } from '../../schemas/token.schema';
 
-/**
- * OAuth Service - Xử lý logic OAuth 2.0 với Bitrix24
- * 
- * Chức năng chính:
- * - Xử lý sự kiện cài đặt ứng dụng từ Bitrix24
- * - Trao đổi authorization code lấy access token
- * - Lưu trữ và quản lý token trong MongoDB
- * - Tự động làm mới token khi hết hạn
- * - Xử lý lỗi OAuth và logging chi tiết
- */
 @Injectable()
 export class OAuthService {
   private readonly logger = new Logger(OAuthService.name);
@@ -26,63 +16,33 @@ export class OAuthService {
     @InjectModel(Token.name) private tokenModel: Model<TokenDocument>,
   ) {}
 
-  /**
-   * Xử lý sự kiện cài đặt ứng dụng từ Bitrix24
-   * 
-   * @param code - Authorization code từ Bitrix24
-   * @param domain - Domain của Bitrix24
-   * @returns Kết quả cài đặt ứng dụng
-   */
+  /** Handle Bitrix24 app installation */
   async handleInstall(code: string, domain: string): Promise<{ success: boolean; message: string }> {
     try {
-      this.logger.log(`Handling install for domain: ${domain}, code: ${code ? 'present' : 'missing'}`);
-
       if (!code) {
-        this.logger.error('Authorization code is missing');
         throw new BadRequestException('Authorization code is required');
       }
 
       if (!domain) {
-        this.logger.error('Domain is missing');
         throw new BadRequestException('Domain is required');
       }
 
-      // Validate domain format
-      if (!domain.includes('.bitrix24.') && !domain.includes('.bitrix24.com')) {
-        this.logger.warn(`Domain format might be incorrect: ${domain}`);
-      }
-
-      // Kiểm tra xem code có phải là AUTH_ID (access token) không
       if (code.startsWith('local.') || code.length > 50) {
-        this.logger.log(`AUTH_ID detected, treating as access token for domain: ${domain}`);
-        // AUTH_ID là access token, không cần exchange
         const tokenData = {
           access_token: code,
-          refresh_token: code, // Tạm thời sử dụng AUTH_ID làm refresh token
-          expires_in: 3600, // Mặc định 1 giờ
+          refresh_token: code,
+          expires_in: 3600,
         };
-        
-        this.logger.log(`Saving AUTH_ID as access token for domain: ${domain}`);
         await this.saveToken(domain, tokenData);
       } else {
-        this.logger.log(`Starting token exchange for domain: ${domain}`);
         const tokenData = await this.exchangeCodeForToken(code, domain);
-        
-        this.logger.log(`Token exchange successful, saving token for domain: ${domain}`);
         await this.saveToken(domain, tokenData);
       }
 
-      this.logger.log(`Successfully installed app for domain: ${domain}`);
       return { success: true, message: 'App installed successfully' };
     } catch (error) {
-      this.logger.error(`Install failed for domain ${domain}:`, {
-        error: error.message,
-        code: code ? 'present' : 'missing',
-        domain: domain,
-        stack: error.stack
-      });
+      this.logger.error(`Install failed for domain ${domain}:`, error.message);
       
-      // Provide more specific error messages
       if (error.message.includes('Missing OAuth configuration')) {
         throw new BadRequestException('OAuth configuration is missing. Please check CLIENT_ID, CLIENT_SECRET, and REDIRECT_URI environment variables.');
       }
@@ -95,13 +55,7 @@ export class OAuthService {
     }
   }
 
-  /**
-   * Trao đổi authorization code lấy access token
-   * 
-   * @param code - Authorization code
-   * @param domain - Domain Bitrix24
-   * @returns Token data từ Bitrix24
-   */
+  /** Exchange authorization code for access token */
   private async exchangeCodeForToken(code: string, domain: string): Promise<any> {
     const clientId = this.configService.get<string>('bitrix24.clientId');
     const clientSecret = this.configService.get<string>('bitrix24.clientSecret');
@@ -122,9 +76,6 @@ export class OAuthService {
     });
 
     try {
-      this.logger.log(`Exchanging code for token - URL: ${tokenUrl}`);
-      this.logger.log(`Request params: ${params.toString()}`);
-      
       const response = await firstValueFrom(
         this.httpService.post(tokenUrl, params, {
           headers: {
@@ -132,23 +83,13 @@ export class OAuthService {
           },
         })
       );
-
-      this.logger.log(`Token exchange response:`, response.data);
       
       if (response.data.error) {
-        this.logger.error('Bitrix24 returned error:', response.data);
         throw new BadRequestException(`Bitrix24 error: ${response.data.error_description || response.data.error}`);
       }
 
       return response.data;
     } catch (error) {
-      this.logger.error('Token exchange failed:', {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
-      
       if (error.response?.data?.error) {
         throw new BadRequestException(`Bitrix24 error: ${error.response.data.error_description || error.response.data.error}`);
       }
@@ -157,12 +98,7 @@ export class OAuthService {
     }
   }
 
-  /**
-   * Lưu token vào database
-   * 
-   * @param domain - Domain Bitrix24
-   * @param tokenData - Dữ liệu token từ Bitrix24
-   */
+  /** Save token to database */
   private async saveToken(domain: string, tokenData: any): Promise<void> {
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
@@ -177,15 +113,9 @@ export class OAuthService {
     });
 
     await token.save();
-    this.logger.log(`Token saved for domain: ${domain}`);
   }
 
-  /**
-   * Lấy access token hiện tại cho domain
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Access token hợp lệ
-   */
+  /** Get valid access token for domain */
   async getAccessToken(domain: string): Promise<string> {
     const token = await this.tokenModel.findOne({ domain, status: 'active' });
     
@@ -194,7 +124,6 @@ export class OAuthService {
     }
 
     if (new Date() >= token.expiresAt) {
-      this.logger.log(`Token expired for domain: ${domain}, refreshing...`);
       await this.refreshToken(domain);
       const refreshedToken = await this.tokenModel.findOne({ domain, status: 'active' });
       if (!refreshedToken) {
@@ -206,11 +135,7 @@ export class OAuthService {
     return token.accessToken;
   }
 
-  /**
-   * Làm mới access token
-   * 
-   * @param domain - Domain Bitrix24
-   */
+  /** Refresh access token */
   async refreshToken(domain: string): Promise<void> {
     const token = await this.tokenModel.findOne({ domain, status: 'active' });
     
@@ -255,22 +180,13 @@ export class OAuthService {
           expiresAt,
         }
       );
-
-      this.logger.log(`Token refreshed for domain: ${domain}`);
     } catch (error) {
-      this.logger.error(`Token refresh failed for domain ${domain}:`, error.response?.data || error.message);
-      
       await this.tokenModel.updateOne({ domain }, { status: 'invalid' });
       throw new BadRequestException('Failed to refresh token');
     }
   }
 
-  /**
-   * Kiểm tra và làm mới token nếu cần
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Access token hợp lệ
-   */
+  /** Ensure valid token and refresh if needed */
   async ensureValidToken(domain: string): Promise<string> {
     try {
       return await this.getAccessToken(domain);
@@ -280,11 +196,7 @@ export class OAuthService {
     }
   }
 
-  /**
-   * Kiểm tra cấu hình OAuth
-   * 
-   * @returns Thông tin cấu hình OAuth
-   */
+  /** Get OAuth configuration */
   getOAuthConfig(): { clientId: string; clientSecret: string; redirectUri: string } {
     return {
       clientId: this.configService.get<string>('bitrix24.clientId') || '',

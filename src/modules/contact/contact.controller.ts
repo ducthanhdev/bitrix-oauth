@@ -26,16 +26,6 @@ import { ContactService } from './contact.service';
 import { CreateContactDto, UpdateContactDto, ContactResponseDto } from '../../dto/contact.dto';
 import { ApiKeyGuard } from '../../guards/api-key.guard';
 
-/**
- * Contact Controller - Xử lý các endpoint CRUD cho Contact
- * 
- * Chức năng:
- * - CRUD operations cho Contact (Create, Read, Update, Delete)
- * - Tìm kiếm và lọc contacts
- * - Quản lý thông tin ngân hàng
- * - Validation và error handling
- * - API Key authentication
- */
 @ApiTags('Contacts')
 @Controller('contacts')
 @UseGuards(ApiKeyGuard)
@@ -45,14 +35,7 @@ export class ContactController {
 
   constructor(private readonly contactService: ContactService) {}
 
-  /**
-   * Lấy danh sách tất cả contacts
-   * 
-   * @param domain - Domain Bitrix24
-   * @param name - Tìm kiếm theo tên
-   * @param email - Tìm kiếm theo email
-   * @returns Danh sách contacts
-   */
+  /** Get all contacts */
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách tất cả contacts' })
   @ApiQuery({ name: 'domain', description: 'Domain Bitrix24', example: 'your-domain.bitrix24.com' })
@@ -75,8 +58,6 @@ export class ContactController {
     }
 
     try {
-      this.logger.log(`Getting all contacts for domain: ${domain}`);
-
       const filters: any = {};
       if (name) {
         filters['%NAME'] = name;
@@ -92,13 +73,7 @@ export class ContactController {
     }
   }
 
-  /**
-   * Lấy thông tin contact theo ID
-   * 
-   * @param id - ID của contact
-   * @param domain - Domain Bitrix24
-   * @returns Thông tin contact chi tiết
-   */
+  /** Get contact by ID */
   @Get(':id')
   @ApiOperation({ summary: 'Lấy thông tin contact theo ID' })
   @ApiParam({ name: 'id', description: 'ID của contact trong Bitrix24' })
@@ -120,7 +95,6 @@ export class ContactController {
     }
 
     try {
-      this.logger.log(`Getting contact ${id} for domain: ${domain}`);
       return await this.contactService.getContactById(domain, id);
     } catch (error) {
       this.logger.error(`Failed to get contact ${id}:`, error.message);
@@ -128,13 +102,7 @@ export class ContactController {
     }
   }
 
-  /**
-   * Tạo contact mới
-   * 
-   * @param createContactDto - Dữ liệu contact mới
-   * @param domain - Domain Bitrix24
-   * @returns Thông tin contact đã tạo
-   */
+  /** Create new contact */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Tạo contact mới' })
@@ -156,7 +124,6 @@ export class ContactController {
     }
 
     try {
-      this.logger.log(`Creating new contact for domain: ${domain}`);
       return await this.contactService.createContact(domain, createContactDto);
     } catch (error) {
       this.logger.error('Failed to create contact:', error.message);
@@ -164,14 +131,7 @@ export class ContactController {
     }
   }
 
-  /**
-   * Cập nhật thông tin contact
-   * 
-   * @param id - ID của contact
-   * @param updateContactDto - Dữ liệu cập nhật
-   * @param domain - Domain Bitrix24
-   * @returns Thông tin contact đã cập nhật
-   */
+  /** Update contact */
   @Put(':id')
   @ApiOperation({ summary: 'Cập nhật thông tin contact' })
   @ApiParam({ name: 'id', description: 'ID của contact trong Bitrix24' })
@@ -195,7 +155,6 @@ export class ContactController {
     }
 
     try {
-      this.logger.log(`Updating contact ${id} for domain: ${domain}`);
       return await this.contactService.updateContact(domain, id, updateContactDto);
     } catch (error) {
       this.logger.error(`Failed to update contact ${id}:`, error.message);
@@ -203,13 +162,7 @@ export class ContactController {
     }
   }
 
-  /**
-   * Xóa contact
-   * 
-   * @param id - ID của contact
-   * @param domain - Domain Bitrix24
-   * @returns Thông báo xóa thành công
-   */
+  /** Delete contact */
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Xóa contact' })
@@ -237,7 +190,6 @@ export class ContactController {
     }
 
     try {
-      this.logger.log(`Deleting contact ${id} for domain: ${domain}`);
       return await this.contactService.deleteContact(domain, id);
     } catch (error) {
       this.logger.error(`Failed to delete contact ${id}:`, error.message);

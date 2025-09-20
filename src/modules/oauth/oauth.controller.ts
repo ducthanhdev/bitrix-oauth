@@ -2,14 +2,6 @@ import { Controller, Get, Post, Query, Body, Logger, BadRequestException, Req } 
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { OAuthService } from './oauth.service';
 
-/**
- * OAuth Controller - Xử lý các endpoint OAuth với Bitrix24
- * 
- * Chức năng:
- * - Nhận sự kiện cài đặt ứng dụng từ Bitrix24
- * - Xử lý OAuth flow và trao đổi token
- * - Cung cấp test endpoints để kiểm tra kết nối
- */
 @ApiTags('OAuth')
 @Controller()
 export class OAuthController {
@@ -17,15 +9,7 @@ export class OAuthController {
 
   constructor(private readonly oauthService: OAuthService) {}
 
-  /**
-   * Endpoint xử lý sự kiện cài đặt ứng dụng từ Bitrix24 (POST)
-   * Bitrix24 có thể gửi data trong body hoặc query parameters
-   * 
-   * @param code - Authorization code từ Bitrix24 (query hoặc body)
-   * @param domain - Domain của Bitrix24 (query hoặc body)
-   * @param body - Request body
-   * @returns Kết quả cài đặt ứng dụng
-   */
+  /** Handle Bitrix24 app installation (POST) */
   @Post('install')
   @ApiOperation({ summary: 'Cài đặt ứng dụng từ Bitrix24 (POST)' })
   @ApiQuery({ name: 'code', description: 'Authorization code từ Bitrix24', required: false })
@@ -49,66 +33,33 @@ export class OAuthController {
     @Query('domain') queryDomain: string,
     @Body() body: any,
   ) {
-    // Xử lý format request từ Bitrix24
     let code, domain;
     
     if (body?.AUTH_ID) {
-      // Format mới từ Bitrix24: sử dụng AUTH_ID làm code
       code = body.AUTH_ID;
       
-      // Lấy domain từ query parameter hoặc từ member_id
       if (queryDomain) {
         domain = queryDomain;
       } else if (body?.member_id) {
-        // Có thể domain được gửi trong member_id hoặc cần lấy từ context khác
-        // Tạm thời sử dụng domain mặc định hoặc yêu cầu user cung cấp
-        domain = 'ducthanh.bitrix24.vn'; // Domain mặc định, user cần cập nhật
+        domain = 'ducthanh.bitrix24.vn';
         this.logger.warn(`Domain not provided, using default: ${domain}`);
       } else {
         domain = queryDomain;
       }
-      
-      this.logger.log(`Bitrix24 format detected - AUTH_ID: ${code}, Domain: ${domain}`);
     } else {
-      // Format cũ: code và domain từ body hoặc query
       code = body?.code || queryCode;
       domain = body?.domain || queryDomain;
     }
     
-    this.logger.log(`Install POST request received - Domain: ${domain}, Code: ${code ? 'present' : 'missing'}`);
-    this.logger.log(`Query params - code: ${queryCode}, domain: ${queryDomain}`);
-    this.logger.log(`Body params - code: ${body?.code}, domain: ${body?.domain}`);
-    this.logger.log(`Body AUTH_ID: ${body?.AUTH_ID}`);
-    this.logger.log(`Final values - code: ${code}, domain: ${domain}`);
-    this.logger.log(`Full request body:`, body);
-    
     try {
-      const result = await this.oauthService.handleInstall(code, domain);
-      this.logger.log(`Install successful for domain: ${domain}`);
-      return result;
+      return await this.oauthService.handleInstall(code, domain);
     } catch (error) {
-      this.logger.error('Install POST failed:', {
-        error: error.message,
-        domain: domain,
-        code: code ? 'present' : 'missing',
-        queryCode: queryCode,
-        queryDomain: queryDomain,
-        bodyCode: body?.code,
-        bodyDomain: body?.domain,
-        authId: body?.AUTH_ID
-      });
+      this.logger.error('Install POST failed:', error.message);
       throw error;
     }
   }
 
-  /**
-   * Endpoint xử lý sự kiện cài đặt ứng dụng từ Bitrix24 (GET)
-   * Backup method cho trường hợp redirect từ Bitrix24
-   * 
-   * @param code - Authorization code từ Bitrix24
-   * @param domain - Domain của Bitrix24
-   * @returns Kết quả cài đặt ứng dụng với thông báo user-friendly
-   */
+  /** Handle Bitrix24 app installation (GET) */
   @Get('install')
   @ApiOperation({ summary: 'Cài đặt ứng dụng từ Bitrix24 (GET)' })
   @ApiQuery({ name: 'code', description: 'Authorization code từ Bitrix24' })
@@ -119,30 +70,19 @@ export class OAuthController {
     @Query('code') code: string,
     @Query('domain') domain: string,
   ) {
-    this.logger.log(`Install GET request received - Domain: ${domain}, Code: ${code ? 'present' : 'missing'}`);
-    
     try {
       const result = await this.oauthService.handleInstall(code, domain);
-      this.logger.log(`Install GET successful for domain: ${domain}`);
       return {
         ...result,
         message: 'App installed successfully! You can close this window.',
       };
     } catch (error) {
-      this.logger.error('Install GET failed:', {
-        error: error.message,
-        domain: domain,
-        code: code ? 'present' : 'missing'
-      });
+      this.logger.error('Install GET failed:', error.message);
       throw error;
     }
   }
 
-  /**
-   * Test endpoint để kiểm tra OAuth configuration
-   * 
-   * @returns Thông tin cấu hình OAuth
-   */
+  /** Check OAuth configuration */
   @Get('test/config')
   @ApiOperation({ summary: 'Kiểm tra cấu hình OAuth' })
   @ApiResponse({ status: 200, description: 'Thông tin cấu hình OAuth' })
@@ -161,12 +101,7 @@ export class OAuthController {
     };
   }
 
-  /**
-   * Debug endpoint để kiểm tra request từ Bitrix24
-   * 
-   * @param req - Request object
-   * @returns Thông tin chi tiết về request
-   */
+  /** Debug endpoint for Bitrix24 request inspection */
   @Post('debug/install')
   @ApiOperation({ summary: 'Debug endpoint để kiểm tra request từ Bitrix24' })
   @ApiResponse({ status: 200, description: 'Thông tin debug request' })
@@ -193,11 +128,7 @@ export class OAuthController {
     };
   }
 
-  /**
-   * Health check endpoint
-   * 
-   * @returns Trạng thái hoạt động của service
-   */
+  /** Health check endpoint */
   @Get('health')
   @ApiOperation({ summary: 'Kiểm tra trạng thái hoạt động của service' })
   @ApiResponse({ status: 200, description: 'Service đang hoạt động bình thường' })

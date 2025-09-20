@@ -3,15 +3,6 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { OAuthService } from '../oauth/oauth.service';
 
-/**
- * Bitrix API Service - Xử lý các API calls tới Bitrix24
- * 
- * Chức năng chính:
- * - Gọi các API Bitrix24 với access token hợp lệ
- * - Xử lý lỗi và retry logic
- * - Cung cấp các method tiện ích cho các API phổ biến
- * - Logging chi tiết cho debug
- */
 @Injectable()
 export class BitrixApiService {
   private readonly logger = new Logger(BitrixApiService.name);
@@ -21,14 +12,7 @@ export class BitrixApiService {
     private readonly oauthService: OAuthService,
   ) {}
 
-  /**
-   * Gọi API Bitrix24 với method và payload tùy chỉnh
-   * 
-   * @param domain - Domain Bitrix24
-   * @param method - Method API (ví dụ: crm.contact.list)
-   * @param payload - Dữ liệu gửi đi
-   * @returns Response từ Bitrix24 API
-   */
+  /** Call Bitrix24 API with method and payload */
   async callBitrixAPI(
     domain: string,
     method: string,
@@ -38,22 +22,19 @@ export class BitrixApiService {
       const accessToken = await this.oauthService.ensureValidToken(domain);
       const apiUrl = `https://${domain}/rest/1/${accessToken}/${method}`;
       
-      this.logger.log(`Calling Bitrix24 API: ${method} for domain: ${domain}`);
       const response = await firstValueFrom(
         this.httpService.post(apiUrl, payload, {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 30000, // 30 seconds timeout
+          timeout: 30000,
         })
       );
 
       if (response.data.error) {
-        this.logger.error(`Bitrix24 API error:`, response.data.error);
         throw new BadRequestException(`Bitrix24 API error: ${response.data.error_description || response.data.error}`);
       }
 
-      this.logger.log(`API call successful: ${method}`);
       return response.data;
 
     } catch (error) {
@@ -78,13 +59,7 @@ export class BitrixApiService {
     }
   }
 
-  /**
-   * Lấy danh sách contact từ Bitrix24
-   * 
-   * @param domain - Domain Bitrix24
-   * @param filters - Bộ lọc tìm kiếm
-   * @returns Danh sách contacts
-   */
+  /** Get contacts from Bitrix24 */
   async getContacts(domain: string, filters: any = {}): Promise<any> {
     const payload = {
       select: ['ID', 'NAME', 'LAST_NAME', 'EMAIL', 'PHONE'],
@@ -95,23 +70,12 @@ export class BitrixApiService {
     return await this.callBitrixAPI(domain, 'crm.contact.list', payload);
   }
 
-  /**
-   * Lấy thông tin user hiện tại
-   * 
-   * @param domain - Domain Bitrix24
-   * @returns Thông tin user
-   */
+  /** Get current user info */
   async getCurrentUser(domain: string): Promise<any> {
     return await this.callBitrixAPI(domain, 'user.current');
   }
 
-  /**
-   * Lấy danh sách deal
-   * 
-   * @param domain - Domain Bitrix24
-   * @param filters - Bộ lọc tìm kiếm
-   * @returns Danh sách deals
-   */
+  /** Get deals from Bitrix24 */
   async getDeals(domain: string, filters: any = {}): Promise<any> {
     const payload = {
       select: ['ID', 'TITLE', 'STAGE_ID', 'OPPORTUNITY', 'CURRENCY_ID'],
@@ -122,13 +86,7 @@ export class BitrixApiService {
     return await this.callBitrixAPI(domain, 'crm.deal.list', payload);
   }
 
-  /**
-   * Lấy danh sách lead
-   * 
-   * @param domain - Domain Bitrix24
-   * @param filters - Bộ lọc tìm kiếm
-   * @returns Danh sách leads
-   */
+  /** Get leads from Bitrix24 */
   async getLeads(domain: string, filters: any = {}): Promise<any> {
     const payload = {
       select: ['ID', 'TITLE', 'STATUS_ID', 'SOURCE_ID', 'OPPORTUNITY'],
