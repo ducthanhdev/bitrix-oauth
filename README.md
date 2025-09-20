@@ -1,201 +1,205 @@
-# Bitrix24 OAuth Integration với NestJS
+# Bitrix24 OAuth API
 
-## 📋 Mô tả dự án
-
-Ứng dụng backend NestJS tích hợp với Bitrix24 thông qua OAuth 2.0, hỗ trợ:
-- Nhận sự kiện cài đặt ứng dụng từ Bitrix24
-- Quản lý và tự động làm mới OAuth tokens
-- Gọi các API Bitrix24 (CRM, Contacts, Deals, Leads)
-- API RESTful để quản lý Contacts với thông tin ngân hàng
+RESTful API được xây dựng với NestJS để tích hợp OAuth 2.0 với Bitrix24, cung cấp các chức năng quản lý contacts và requisites.
 
 ## 🚀 Hướng dẫn cài đặt và chạy dự án
 
 ### Yêu cầu hệ thống
+
 - Node.js >= 18.0.0
-- MongoDB >= 4.4
-- ngrok (để tạo tunnel)
+- npm >= 8.0.0
+- MongoDB >= 5.0
+- ngrok (để expose local server)
 
-### Cài đặt
+### Bước 1: Clone repository
 
-1. **Clone repository**
 ```bash
 git clone <repository-url>
 cd bitrix-oauth
 ```
 
-2. **Cài đặt dependencies**
+### Bước 2: Cài đặt dependencies
+
 ```bash
 npm install
 ```
 
-3. **Cấu hình environment**
-Tạo file `.env` trong thư mục gốc:
+### Bước 3: Cấu hình môi trường
+
+Tạo file `.env` trong thư mục root:
+
 ```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/bitrix-oauth
+
 # Bitrix24 OAuth Configuration
 CLIENT_ID=your_client_id_here
 CLIENT_SECRET=your_client_secret_here
-BITRIX24_DOMAIN=your-domain.bitrix24.vn
-REDIRECT_URI=https://your-ngrok-domain.ngrok-free.app/install
-
-# MongoDB Configuration
-MONGODB_URI=mongodb://localhost:27017/bitrix-oauth
-
-# Server Configuration
-PORT=3000
-NODE_ENV=development
+REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/install
 
 # API Security
-API_KEY=bitrix-oauth-default-key
+API_KEY=your_api_key_here
+
+# Server
+PORT=3000
 ```
 
-4. **Khởi động MongoDB**
+### Bước 4: Chạy MongoDB
+
 ```bash
 # Windows
-mongod
+net start MongoDB
 
-# Linux/Mac
+# macOS/Linux
 sudo systemctl start mongod
 ```
 
-5. **Chạy ứng dụng**
+### Bước 5: Chạy ứng dụng
+
 ```bash
 # Development mode
 npm run start:dev
 
 # Production mode
+npm run build
 npm run start:prod
-
-# Với ngrok tunnel
-npm run start:ngrok
 ```
 
-## 🔧 Hướng dẫn cấu hình ngrok và Bitrix24
+Ứng dụng sẽ chạy tại: `http://localhost:3000`
+
+## 🌐 Hướng dẫn cấu hình ngrok
+
+### Cài đặt ngrok
+
+1. Tải ngrok từ [https://ngrok.com/download](https://ngrok.com/download)
+2. Đăng ký tài khoản miễn phí
+3. Lấy auth token từ dashboard
 
 ### Cấu hình ngrok
 
-1. **Cài đặt ngrok**
 ```bash
-# Download từ https://ngrok.com/download
-# Hoặc sử dụng npm
-npm install -g ngrok
-```
+# Đăng nhập với auth token
+ngrok config add-authtoken YOUR_AUTH_TOKEN
 
-2. **Chạy ngrok**
-```bash
+# Expose port 3000
 ngrok http 3000
 ```
 
-3. **Lấy URL ngrok**
-- Copy URL từ terminal (ví dụ: `https://abc123.ngrok-free.app`)
-- Cập nhật `REDIRECT_URI` trong `.env`
+### Cập nhật cấu hình
 
-### Cấu hình Bitrix24
+Sau khi chạy ngrok, bạn sẽ nhận được URL như:
+```
+https://abc123.ngrok-free.app
+```
 
-1. **Truy cập Bitrix24**
-- Đăng nhập vào `https://your-domain.bitrix24.vn`
-- Vào **Ứng dụng** → **Phát triển** → **Ứng dụng của tôi**
+Cập nhật file `.env`:
+```env
+REDIRECT_URI=https://abc123.ngrok-free.app/install
+```
 
-2. **Tạo ứng dụng mới**
-- Click **"Tạo ứng dụng"**
-- Điền thông tin:
-  - **Tên**: NestJS OAuth App
-  - **URL cài đặt**: `https://your-ngrok-domain.ngrok-free.app/install`
-  - **Quyền truy cập**: CRM, Users, Leads, Deals
+## 🔧 Hướng dẫn cấu hình Bitrix24
 
-3. **Lấy thông tin OAuth**
-- Copy **CLIENT_ID** và **CLIENT_SECRET**
-- Cập nhật vào file `.env`
+### Bước 1: Tạo ứng dụng trong Bitrix24
 
-4. **Cài đặt ứng dụng**
-- Click **"Cài đặt"** để test OAuth flow
+1. Đăng nhập vào Bitrix24 portal của bạn
+2. Vào **Marketplace** > **Applications** > **Create application**
+3. Chọn **Local application**
 
-## 📚 Danh sách các endpoint API
+### Bước 2: Cấu hình OAuth
 
-### OAuth Endpoints
+Trong form tạo ứng dụng:
 
-#### `POST /install`
-Cài đặt ứng dụng và nhận OAuth token
+- **Application name**: Bitrix OAuth API
+- **Application code**: bitrix_oauth_api
+- **Redirect URI**: `https://your-ngrok-url.ngrok-free.app/install`
+- **Scopes**: Chọn các quyền cần thiết:
+  - `crm` - Quản lý CRM
+  - `user` - Thông tin người dùng
+
+### Bước 3: Lấy thông tin ứng dụng
+
+Sau khi tạo, bạn sẽ nhận được:
+- **Client ID**: `local.xxxxxxxxxxxxxxxx.xxxxxxxx`
+- **Client Secret**: Chuỗi dài 40 ký tự
+
+### Bước 4: Cập nhật file .env
+
+```env
+CLIENT_ID=local.xxxxxxxxxxxxxxxx.xxxxxxxx
+CLIENT_SECRET=your_40_character_secret_here
+REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/install
+```
+
+### Bước 5: Cài đặt ứng dụng
+
+1. Trong Bitrix24, vào **Marketplace** > **Applications**
+2. Tìm ứng dụng vừa tạo và click **Install**
+3. Ứng dụng sẽ redirect đến ngrok URL và tự động cài đặt
+
+## 📚 Danh sách API Endpoints
+
+### 🔐 Authentication
+
+Tất cả endpoints (trừ `/install`, `/health`, `/test/*`) yêu cầu API Key:
+
+```
+X-API-Key: your_api_key_here
+```
+
+### 🏠 OAuth Endpoints
+
+#### Cài đặt ứng dụng
 ```http
 POST /install
 Content-Type: application/json
 
 {
-  "code": "authorization_code_from_bitrix24",
-  "domain": "your-domain.bitrix24.vn"
+  "AUTH_ID": "access_token_from_bitrix",
+  "REFRESH_ID": "refresh_token_from_bitrix",
+  "member_id": "member_id"
 }
 ```
 
-#### `GET /install`
-Backup method cho OAuth (GET request)
+#### Kiểm tra cấu hình OAuth
 ```http
-GET /install?code=authorization_code&domain=your-domain.bitrix24.vn
+GET /test/config
 ```
 
-#### `GET /health`
-Kiểm tra trạng thái ứng dụng
+#### Health check
 ```http
 GET /health
 ```
 
-### Bitrix24 Test Endpoints
+### 👥 Contact Management
 
-#### `GET /test/contacts`
-Test API lấy danh sách contacts
+#### Lấy danh sách contacts
 ```http
-GET /test/contacts?domain=your-domain.bitrix24.vn
+GET /contacts?domain=your-domain.bitrix24.com&name=John&email=john@example.com
+X-API-Key: your_api_key
 ```
 
-#### `GET /test/user`
-Test API lấy thông tin user
+#### Lấy contact theo ID
 ```http
-GET /test/user?domain=your-domain.bitrix24.vn
+GET /contacts/{id}?domain=your-domain.bitrix24.com
+X-API-Key: your_api_key
 ```
 
-#### `GET /test/deals`
-Test API lấy danh sách deals
+#### Tạo contact mới
 ```http
-GET /test/deals?domain=your-domain.bitrix24.vn
-```
-
-#### `GET /test/leads`
-Test API lấy danh sách leads
-```http
-GET /test/leads?domain=your-domain.bitrix24.vn
-```
-
-### Contact Management API
-
-#### `GET /contacts`
-Lấy danh sách tất cả contacts
-```http
-GET /contacts?domain=your-domain.bitrix24.vn
-x-api-key: bitrix-oauth-default-key
-```
-
-#### `GET /contacts/:id`
-Lấy thông tin contact theo ID
-```http
-GET /contacts/123?domain=your-domain.bitrix24.vn
-x-api-key: bitrix-oauth-default-key
-```
-
-#### `POST /contacts`
-Tạo contact mới
-```http
-POST /contacts?domain=your-domain.bitrix24.vn
-x-api-key: bitrix-oauth-default-key
+POST /contacts?domain=your-domain.bitrix24.com
+X-API-Key: your_api_key
 Content-Type: application/json
 
 {
-  "name": "Nguyễn Văn A",
+  "name": "John Doe",
+  "phone": "+1234567890",
+  "email": "john@example.com",
+  "website": "https://johndoe.com",
   "address": {
-    "ward": "Phường 1",
-    "district": "Quận 1",
-    "city": "TP. Hồ Chí Minh"
+    "ward": "Ward 1",
+    "district": "District 1", 
+    "city": "Ho Chi Minh City"
   },
-  "phone": "0123456789",
-  "email": "nguyenvana@example.com",
-  "website": "https://example.com",
   "bankInfo": {
     "bankName": "Vietcombank",
     "accountNumber": "1234567890"
@@ -203,165 +207,212 @@ Content-Type: application/json
 }
 ```
 
-#### `PUT /contacts/:id`
-Cập nhật contact
+#### Cập nhật contact
 ```http
-PUT /contacts/123?domain=your-domain.bitrix24.vn
-x-api-key: bitrix-oauth-default-key
+PUT /contacts/{id}?domain=your-domain.bitrix24.com
+X-API-Key: your_api_key
 Content-Type: application/json
 
 {
-  "name": "Nguyễn Văn B",
-  "phone": "0987654321",
-  "email": "nguyenvanb@example.com"
+  "name": "John Smith",
+  "phone": "+0987654321",
+  "email": "johnsmith@example.com"
 }
 ```
 
-#### `DELETE /contacts/:id`
-Xóa contact
+#### Xóa contact
 ```http
-DELETE /contacts/123?domain=your-domain.bitrix24.vn
-x-api-key: bitrix-oauth-default-key
+DELETE /contacts/{id}?domain=your-domain.bitrix24.com
+X-API-Key: your_api_key
 ```
 
-## 🔍 Các lỗi đã xử lý và cách kiểm tra
+### 🧪 Test Endpoints
 
-### 1. Lỗi OAuth
-- **"Authorization code is required"**: Chưa cung cấp code từ Bitrix24
-- **"Invalid domain"**: Domain không khớp với cấu hình
-- **"OAuth token exchange failed"**: Lỗi trao đổi token với Bitrix24
+#### Test contacts API
+```http
+GET /test/contacts?domain=your-domain.bitrix24.com
+```
 
-### 2. Lỗi API Key
-- **"Invalid or missing API key"**: Thiếu hoặc sai API key
-- **"Unauthorized"**: API key không hợp lệ
+#### Test user API
+```http
+GET /test/user?domain=your-domain.bitrix24.com
+```
 
-### 3. Lỗi Token
-- **"No active token found"**: Chưa có OAuth token cho domain
-- **"Token expired"**: Token đã hết hạn, cần refresh
-- **"Token refresh failed"**: Không thể refresh token
+#### Test deals API
+```http
+GET /test/deals?domain=your-domain.bitrix24.com
+```
+
+#### Test leads API
+```http
+GET /test/leads?domain=your-domain.bitrix24.com
+```
+
+## 🔍 API Documentation
+
+Truy cập Swagger UI tại: `http://localhost:3000/api`
+
+## ⚠️ Các lỗi thường gặp và cách khắc phục
+
+### 1. Lỗi kết nối MongoDB
+
+**Lỗi**: `MongoServerError: connection timed out`
+
+**Nguyên nhân**: MongoDB chưa được khởi động
+
+**Khắc phục**:
+```bash
+# Windows
+net start MongoDB
+
+# macOS/Linux
+sudo systemctl start mongod
+
+# Hoặc chạy MongoDB manual
+mongod --dbpath /path/to/your/db
+```
+
+### 2. Lỗi OAuth configuration
+
+**Lỗi**: `Missing OAuth configuration`
+
+**Nguyên nhân**: Thiếu CLIENT_ID, CLIENT_SECRET, hoặc REDIRECT_URI
+
+**Khắc phục**:
+1. Kiểm tra file `.env` có đầy đủ thông tin
+2. Restart ứng dụng sau khi cập nhật `.env`
+3. Kiểm tra ngrok URL có đúng không
+
+### 3. Lỗi ngrok tunnel
+
+**Lỗi**: `ngrok: command not found`
+
+**Khắc phục**:
+1. Tải và cài đặt ngrok
+2. Thêm ngrok vào PATH
+3. Đăng nhập với auth token: `ngrok config add-authtoken YOUR_TOKEN`
 
 ### 4. Lỗi Bitrix24 API
-- **"401 Unauthorized"**: Token không hợp lệ hoặc hết hạn
-- **"403 Forbidden"**: Không có quyền truy cập
-- **"404 Not Found"**: Resource không tồn tại
-- **"500 Internal Server Error"**: Lỗi server Bitrix24
 
-### 5. Lỗi Network
-- **"Network timeout"**: Kết nối mạng bị timeout
-- **"DNS resolution failed"**: Không thể phân giải domain
-- **"Connection refused"**: Không thể kết nối đến server
+**Lỗi**: `Bitrix24 API error: invalid_grant`
 
-## 🧪 Kiểm thử
+**Nguyên nhân**: Token hết hạn hoặc không hợp lệ
 
-### Unit Tests
+**Khắc phục**:
+1. Cài đặt lại ứng dụng trong Bitrix24
+2. Kiểm tra redirect URI có đúng không
+3. Đảm bảo ngrok đang chạy và accessible
+
+### 5. Lỗi API Key
+
+**Lỗi**: `Invalid or missing API key`
+
+**Khắc phục**:
+1. Thêm header `X-API-Key` vào request
+2. Kiểm tra API key trong file `.env`
+3. Sử dụng đúng API key đã cấu hình
+
+### 6. Lỗi domain không tồn tại
+
+**Lỗi**: `No active token found for this domain`
+
+**Khắc nhân**: Chưa cài đặt ứng dụng cho domain này
+
+**Khắc phục**:
+1. Cài đặt ứng dụng trong Bitrix24 portal
+2. Đảm bảo domain trong request đúng với domain Bitrix24
+3. Kiểm tra token đã được lưu trong database
+
+## 🧪 Cách kiểm tra hệ thống
+
+### 1. Kiểm tra cấu hình OAuth
+
 ```bash
-# Chạy tất cả tests
-npm run test
-
-# Chạy tests với coverage
-npm run test:cov
-
-# Chạy tests cho service cụ thể
-npm run test -- --testPathPattern=bitrix-api.service.spec.ts
+curl -X GET http://localhost:3000/test/config
 ```
 
-### Integration Tests
-```bash
-# Chạy e2e tests
-npm run test:e2e
+Kết quả mong đợi:
+```json
+{
+  "status": "ok",
+  "config": {
+    "clientId": "configured",
+    "clientSecret": "configured", 
+    "redirectUri": "https://your-ngrok.ngrok-free.app/install"
+  }
+}
 ```
 
-### Manual Testing
-Sử dụng file `test-api.http` hoặc `test-contact-api.http` để test các endpoint.
+### 2. Kiểm tra health check
+
+```bash
+curl -X GET http://localhost:3000/health
+```
+
+### 3. Kiểm tra API endpoints
+
+```bash
+# Test với API key
+curl -X GET "http://localhost:3000/contacts?domain=your-domain.bitrix24.com" \
+  -H "X-API-Key: your_api_key"
+```
+
+### 4. Kiểm tra database
+
+```bash
+# Kết nối MongoDB
+mongo bitrix-oauth
+
+# Kiểm tra tokens
+db.tokens.find()
+```
 
 ## 📁 Cấu trúc dự án
 
 ```
 src/
-├── config/                 # Cấu hình ứng dụng
-│   └── configuration.ts
-├── dto/                    # Data Transfer Objects
-│   └── contact.dto.ts
-├── guards/                 # Authentication guards
-│   └── api-key.guard.ts
-├── modules/                # Feature modules
-│   ├── oauth/              # OAuth module
-│   │   ├── oauth.controller.ts
-│   │   ├── oauth.module.ts
-│   │   └── oauth.service.ts
-│   ├── bitrix/             # Bitrix API module
-│   │   ├── bitrix.controller.ts
-│   │   ├── bitrix.module.ts
-│   │   └── bitrix-api.service.ts
-│   └── contact/            # Contact management module
-│       ├── contact.controller.ts
-│       ├── contact.module.ts
-│       └── contact.service.ts
-├── schemas/                # MongoDB schemas
-│   └── token.schema.ts
-├── scripts/                # Utility scripts
-│   ├── create-test-token.js
-│   └── delete-test-token.js
-├── test/                   # Test files
-│   └── unit/
-│       ├── bitrix-api.service.spec.ts
-│       └── contact.service.spec.ts
-├── app.controller.ts       # Root controller
-├── app.module.ts          # Root module
-├── app.service.ts         # Root service
-└── main.ts               # Application entry point
+├── modules/
+│   ├── oauth/           # OAuth authentication
+│   ├── contact/         # Contact management
+│   └── bitrix/          # Bitrix24 API integration
+├── guards/
+│   └── api-key.guard.ts # API key authentication
+├── schemas/
+│   └── token.schema.ts  # MongoDB token schema
+├── dto/
+│   └── contact.dto.ts   # Data transfer objects
+├── config/
+│   └── configuration.ts # App configuration
+└── main.ts              # Application entry point
 ```
 
-## 🔧 Scripts có sẵn
+## 🛠️ Scripts có sẵn
 
 ```bash
 # Development
-npm run start:dev          # Chạy development mode
-npm run start:prod         # Chạy production mode
-npm run start:ngrok        # Chạy với ngrok tunnel
-
-# Testing
-npm run test               # Chạy unit tests
-npm run test:cov          # Chạy tests với coverage
-npm run test:e2e          # Chạy e2e tests
-
-# Code Quality
-npm run format            # Format code với Prettier
-npm run format:check      # Kiểm tra format
-npm run lint              # Chạy ESLint
-npm run lint:check        # Kiểm tra linting
+npm run start:dev
 
 # Build
-npm run build             # Build ứng dụng
+npm run build
+
+# Production
+npm run start:prod
+
+# Lint
+npm run lint
+
+# Test
+npm run test
 ```
 
-## 📊 Performance
+## 📝 Ghi chú quan trọng
 
-- **Response time**: < 200ms cho các API đơn giản
-- **Memory usage**: ~50MB cho development mode
-- **Database**: MongoDB với indexing cho OAuth tokens
-- **Caching**: Token caching để giảm API calls
+1. **Ngrok URL**: Ngrok URL sẽ thay đổi mỗi lần restart, cần cập nhật REDIRECT_URI
+2. **API Key**: Bảo mật API key, không commit vào git
+3. **Database**: Đảm bảo MongoDB đang chạy trước khi start ứng dụng
+4. **Bitrix24**: Mỗi domain cần cài đặt ứng dụng riêng biệt
 
-## 🔒 Security
-
-- **API Key authentication** cho tất cả endpoints (trừ OAuth)
-- **OAuth 2.0** cho Bitrix24 integration
-- **Input validation** với class-validator
-- **Error handling** không expose sensitive information
-- **Logging** cho audit trail
-
-## 📝 Changelog
-
-### v1.0.0
-- ✅ OAuth 2.0 integration với Bitrix24
-- ✅ Token management và auto-refresh
-- ✅ Bitrix24 API integration
-- ✅ Contact CRUD operations
-- ✅ API documentation với Swagger
-- ✅ Unit tests
-- ✅ Error handling và logging
-
-## 🤝 Contributing
+## 🤝 Đóng góp
 
 1. Fork repository
 2. Tạo feature branch
@@ -371,8 +422,4 @@ npm run build             # Build ứng dụng
 
 ## 📄 License
 
-MIT License - xem file LICENSE để biết thêm chi tiết.
-
-## 📞 Support
-
-Nếu gặp vấn đề, hãy tạo issue trên GitHub hoặc liên hệ qua email.
+MIT License
