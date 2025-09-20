@@ -1,6 +1,23 @@
 ### Health Check
 GET http://localhost:3000/health
 
+### Test OAuth Configuration
+GET http://localhost:3000/test/config
+
+### Debug Install Endpoint (POST)
+POST http://localhost:3000/debug/install
+Content-Type: application/json
+
+{
+  "code": "test_code_123",
+  "domain": "test-domain.bitrix24.com",
+  "member_id": "12345",
+  "event_token": "event_token_123"
+}
+
+### Debug Install Endpoint (GET)
+GET http://localhost:3000/debug/install?code=test_code_123&domain=test-domain.bitrix24.com
+
 ### Install App (POST)
 POST http://localhost:3000/install
 Content-Type: application/json
@@ -29,5 +46,11 @@ GET http://localhost:3000/test/leads?domain=ducthanh.bitrix24.vn
 GET http://localhost:3000/contacts?domain=ducthanh.bitrix24.vn
 x-api-key: bitrix-oauth-default-key
 
-### Test OAuth Install (GET)
+### Test OAuth Install (GET) - Test with real domain
 GET http://localhost:3000/install?domain=ducthanh.bitrix24.vn&code=test123
+
+### Test OAuth Install (POST) - Test with real domain
+POST http://localhost:3000/install?domain=ducthanh.bitrix24.vn&code=test123
+Content-Type: application/json
+
+{}

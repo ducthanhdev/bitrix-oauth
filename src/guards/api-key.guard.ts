@@ -9,7 +9,7 @@ export class ApiKeyGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const url = request.url;
     
-    if (url.startsWith('/install') || url.startsWith('/health') || url.startsWith('/test/')) {
+    if (url.startsWith('/install') || url.startsWith('/health') || url.startsWith('/test/') || url.startsWith('/debug/')) {
       return true;
     }
     

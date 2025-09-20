@@ -35,19 +35,62 @@ export class OAuthService {
    */
   async handleInstall(code: string, domain: string): Promise<{ success: boolean; message: string }> {
     try {
-      this.logger.log(`Handling install for domain: ${domain}`);
+      this.logger.log(`Handling install for domain: ${domain}, code: ${code ? 'present' : 'missing'}`);
 
       if (!code) {
+        this.logger.error('Authorization code is missing');
         throw new BadRequestException('Authorization code is required');
       }
 
-      const tokenData = await this.exchangeCodeForToken(code, domain);
-      await this.saveToken(domain, tokenData);
+      if (!domain) {
+        this.logger.error('Domain is missing');
+        throw new BadRequestException('Domain is required');
+      }
+
+      // Validate domain format
+      if (!domain.includes('.bitrix24.') && !domain.includes('.bitrix24.com')) {
+        this.logger.warn(`Domain format might be incorrect: ${domain}`);
+      }
+
+      // Kiểm tra xem code có phải là AUTH_ID (access token) không
+      if (code.startsWith('local.') || code.length > 50) {
+        this.logger.log(`AUTH_ID detected, treating as access token for domain: ${domain}`);
+        // AUTH_ID là access token, không cần exchange
+        const tokenData = {
+          access_token: code,
+          refresh_token: code, // Tạm thời sử dụng AUTH_ID làm refresh token
+          expires_in: 3600, // Mặc định 1 giờ
+        };
+        
+        this.logger.log(`Saving AUTH_ID as access token for domain: ${domain}`);
+        await this.saveToken(domain, tokenData);
+      } else {
+        this.logger.log(`Starting token exchange for domain: ${domain}`);
+        const tokenData = await this.exchangeCodeForToken(code, domain);
+        
+        this.logger.log(`Token exchange successful, saving token for domain: ${domain}`);
+        await this.saveToken(domain, tokenData);
+      }
 
       this.logger.log(`Successfully installed app for domain: ${domain}`);
       return { success: true, message: 'App installed successfully' };
     } catch (error) {
-      this.logger.error(`Install failed for domain ${domain}:`, error);
+      this.logger.error(`Install failed for domain ${domain}:`, {
+        error: error.message,
+        code: code ? 'present' : 'missing',
+        domain: domain,
+        stack: error.stack
+      });
+      
+      // Provide more specific error messages
+      if (error.message.includes('Missing OAuth configuration')) {
+        throw new BadRequestException('OAuth configuration is missing. Please check CLIENT_ID, CLIENT_SECRET, and REDIRECT_URI environment variables.');
+      }
+      
+      if (error.message.includes('Failed to exchange code for token')) {
+        throw new BadRequestException('Failed to exchange authorization code for access token. Please check your OAuth configuration and try again.');
+      }
+      
       throw error;
     }
   }
@@ -79,6 +122,9 @@ export class OAuthService {
     });
 
     try {
+      this.logger.log(`Exchanging code for token - URL: ${tokenUrl}`);
+      this.logger.log(`Request params: ${params.toString()}`);
+      
       const response = await firstValueFrom(
         this.httpService.post(tokenUrl, params, {
           headers: {
@@ -87,10 +133,27 @@ export class OAuthService {
         })
       );
 
+      this.logger.log(`Token exchange response:`, response.data);
+      
+      if (response.data.error) {
+        this.logger.error('Bitrix24 returned error:', response.data);
+        throw new BadRequestException(`Bitrix24 error: ${response.data.error_description || response.data.error}`);
+      }
+
       return response.data;
     } catch (error) {
-      this.logger.error('Token exchange failed:', error.response?.data || error.message);
-      throw new BadRequestException('Failed to exchange code for token');
+      this.logger.error('Token exchange failed:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      
+      if (error.response?.data?.error) {
+        throw new BadRequestException(`Bitrix24 error: ${error.response.data.error_description || error.response.data.error}`);
+      }
+      
+      throw new BadRequestException(`Failed to exchange code for token: ${error.message}`);
     }
   }
 
@@ -215,5 +278,18 @@ export class OAuthService {
       this.logger.error(`Failed to get valid token for domain ${domain}:`, error.message);
       throw error;
     }
+  }
+
+  /**
+   * Kiểm tra cấu hình OAuth
+   * 
+   * @returns Thông tin cấu hình OAuth
+   */
+  getOAuthConfig(): { clientId: string; clientSecret: string; redirectUri: string } {
+    return {
+      clientId: this.configService.get<string>('bitrix24.clientId') || '',
+      clientSecret: this.configService.get<string>('bitrix24.clientSecret') || '',
+      redirectUri: this.configService.get<string>('bitrix24.redirectUri') || '',
+    };
   }
 }
